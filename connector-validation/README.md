@@ -1,136 +1,161 @@
-# Oura Connector Validation Test (PHI project)
+# Oura Connector Validation + Phase B Backfill (PHI project)
 
-Standalone, dependency-free Python script that proves the registered Oura
-OAuth2 application can authenticate, pull a small bounded sample of your own
-`daily_sleep` data, and land it losslessly as a raw source artifact in the
-canonical PHI repository path. Nothing more.
+This directory contains the bounded local Oura connector used by the Personal
+Health Intelligence project. It is designed to run on the same computer as the
+browser used to approve Oura access because the OAuth callback is
+`http://localhost:8000/callback`.
 
-This is execution of the already-approved Oura connector validation step
-(step 4 of the v0.1 build sequence). It does not create any new durable
-architectural decision and does not modify PHI governance, architecture,
-decision logs, or templates.
+The public GitHub repository contains connector code/documentation only. Raw
+health data, credentials, access tokens, refresh tokens, and vault exports do
+not belong here.
 
-## Why this must run on your own machine, not in a cloud AI session
+## Current governed phases
 
-The registered redirect URI is `http://localhost:8000/callback`. That only
-resolves back to this script if the browser completing the Oura consent
-screen and the process listening on port 8000 are the **same machine**. A
-cloud-hosted assistant session cannot receive that redirect. Run this
-locally.
+### Phase A — COMPLETE / validated 2026-08-16
 
-## What this script does (and only this)
+`run_validation.py`
 
-1. **Phase 1 — OAuth2 Authorization Code flow.** Starts a temporary local
-   listener on `http://localhost:8000/callback`, opens the Oura authorize
-   URL in your browser, exchanges the returned code for an access token —
-   all in one process, in memory. Tokens are never written to disk, printed,
-   or logged.
-2. **Phase 2 — one bounded API call.** `GET /v2/usercollection/daily_sleep`
-   for the most recent 7 days. Reports HTTP status, scope granted, record
-   count, and whether pagination was present. Never prints token values.
-3. **Phase 3 — raw landing.** Only if Phase 2 returns HTTP 200: writes the
-   exact raw response bytes and a provenance/metadata file (retrieved_at,
-   source, endpoint, requested date range, source record IDs, SHA-256
-   checksum) under:
-   ```
-   <VAULT_ROOT>/03_Areas/Health/Personal Health Repository/Source Data/Oura/<YYYY-MM-DD>/
-     daily_sleep.json
-     daily_sleep.metadata.json
-   ```
-   No transformation or normalization happens here.
-4. **Phase 4 — manual UI comparison.** Prints the retrieved dates/scores so
-   you can eyeball them against the Oura app for 3-5 days, then records your
-   PASS / PARTIAL / FAIL judgment. No medical interpretation is performed by
-   the script.
-5. **Phase 5 — hard stop.** The script has no code paths for backfill (30-90
-   day), detailed `/sleep` parsing, HRV/RHR normalization, webhook
-   subscriptions, scheduling, GitHub Actions, or PHI application logic. Those
-   require a separate, explicitly approved step.
+Purpose: prove the registered Oura OAuth2 application can authenticate, pull a
+small 7-day `daily_sleep` sample, land it losslessly in the canonical PHI
+repository, create provenance/checksum metadata, and support manual comparison
+against the Oura app.
+
+### Phase B — IMPLEMENTED / local execution validation pending
+
+`run_phase_b.py`
+
+Purpose: expand the already-validated mechanism without adding unattended
+automation or broader OAuth permissions.
+
+It performs one bounded **30-day** retrieval for these `daily`-scope datasets:
+
+- `daily_sleep` — `/v2/usercollection/daily_sleep`
+- `sleep` — `/v2/usercollection/sleep`
+- `daily_readiness` — `/v2/usercollection/daily_readiness`
+- `daily_activity` — `/v2/usercollection/daily_activity`
+
+The runner follows Oura pagination with a hard page cap, then writes one raw
+JSON artifact and one metadata sidecar per dataset under:
+
+```text
+<VAULT_ROOT>/03_Areas/Health/Personal Health Repository/Source Data/Oura/<YYYY-MM-DD>/
+  daily_sleep.json
+  daily_sleep.metadata.json
+  sleep.json
+  sleep.metadata.json
+  daily_readiness.json
+  daily_readiness.metadata.json
+  daily_activity.json
+  daily_activity.metadata.json
+```
+
+The metadata records retrieval time, endpoint, requested date range, granted
+scope, source record IDs, record count, pages fetched, and SHA-256 checksum.
+No normalization or medical interpretation occurs during raw landing.
 
 ## Setup
 
 ```bash
-cd oura_phi_validation
+cd connector-validation
 cp .env.example .env
 ```
 
-Edit `.env` **locally, in your own editor** — never paste real values into a
-chat window with any AI assistant:
+Edit `.env` locally in your own editor. Never paste real values into chat:
 
-```
+```text
 OURA_CLIENT_ID=<from cloud.ouraring.com/oauth/applications>
 OURA_CLIENT_SECRET=<from cloud.ouraring.com/oauth/applications>
 OURA_REDIRECT_URI=http://localhost:8000/callback
 OURA_SCOPE=daily
-VAULT_ROOT=/absolute/path/to/your/local/AI_Vault
+VAULT_ROOT=/absolute/path/to/your/AI_Vault
 ```
 
-`VAULT_ROOT` must be the folder that directly contains `00_System`,
-`01_Daily`, `02_Projects`, `03_Areas`, `04_People`, `05_Resources`,
-`06_Memory`. The script refuses to write anywhere else and will report the
-constraint instead of guessing a location if this is missing or wrong.
+`VAULT_ROOT` must directly contain `00_System`, `01_Daily`, `02_Projects`,
+`03_Areas`, `04_People`, `05_Resources`, and `06_Memory`.
 
-No `pip install` is required — everything uses the Python standard library
-(`http.server`, `urllib`, `webbrowser`, `hashlib`, `json`).
+No `pip install` is required; the connector uses Python standard-library
+modules only.
 
-## Run
+## Run Phase A
 
 ```bash
 python run_validation.py
 ```
 
-Your browser opens to Oura's consent screen. Approve access, and the script
-completes automatically. At the end it prints a report in this format:
+Use this only when re-checking the original connectivity slice.
 
+## Run Phase B
+
+```bash
+python run_phase_b.py
 ```
-Oura Connector Validation
-OAuth authorization: PASS / FAIL
-Token exchange: PASS / FAIL
-API endpoint: /v2/usercollection/daily_sleep
-HTTP status: ...
-Scope granted: ...
-Date range: ...
-Records returned: ...
-Raw file written to: ...
-Raw checksum created: YES / NO
-Oura UI comparison: PASS / PARTIAL / FAIL
-Credential leakage detected: NO
-GitHub health data committed: NO
-Errors / limitations: ...
-Recommended next step: ...
-```
+
+Expected sequence:
+
+1. The script starts the localhost OAuth callback listener.
+2. Your default browser opens Oura authorization.
+3. Authenticate locally (including passkey if offered by Oura/browser).
+4. The authorization code returns to the local Python process.
+5. The script retrieves the four approved datasets for the bounded 30-day
+   range and follows pagination up to the configured hard cap.
+6. Each successful dataset is landed separately in the canonical Oura raw
+   folder with provenance/checksum metadata.
+7. The script reports PASS/PARTIAL/FAIL and stops.
+8. Manually compare representative records against Oura before treating the
+   backfill as semantically validated. Pay special attention to detailed sleep
+   session boundaries and the HRV/resting-heart-rate fields that will feed the
+   next normalization step.
+
+If any dataset fails or pagination reaches the hard cap, the run is incomplete.
+Do not normalize or generate insights from that run until the failure is
+resolved and the bounded retrieval is repeated successfully.
+
+## Current stop conditions
+
+Phase B deliberately does **not** implement:
+
+- `heartrate`, `workout`, or `spo2Daily` OAuth-scope expansion;
+- HRV/resting-heart-rate normalization;
+- normalized Health Core writes;
+- weekly/monthly/semiannual insight generation;
+- token or refresh-token persistence;
+- incremental synchronization;
+- webhooks;
+- cron, scheduled jobs, or GitHub Actions;
+- Personal Health App code;
+- medical interpretation.
+
+Those remain separate governed steps.
 
 ## Security notes
 
-- Client ID/Secret and tokens are read only from your local `.env` /
-  environment — never typed into a chat window, never logged, never
-  committed. `.gitignore` in this project blocks `.env`, token/credential
-  files, and any raw Oura JSON from ever being committed.
-- `secure_utils.SecretGuard` scrubs known secret values out of exception
-  messages before they can propagate to the terminal, as a defense-in-depth
-  measure.
-- If a Client Secret, access token, or refresh token ever appears in
-  terminal output, logs, a generated file, or Git history, stop immediately,
-  rotate the credential in the Oura developer portal, and treat it as
-  compromised — do not just delete the output.
-- This repository (`boydii0/personal-health-intelligence-oura`) is public.
-  Only non-sensitive documentation and connector source code belong here.
-  Raw Oura data, vault exports, and credentials never do.
+- Client secret and OAuth tokens remain local/in-memory and must never be
+  committed or copied into `AI_Vault`.
+- `.gitignore` blocks `.env`, token/credential files, and raw Oura JSON.
+- `SecretGuard` redacts known secret values from propagated exception text.
+- The canonical raw-data destination is the restricted health-repository
+  subtree in `AI_Vault`; the script refuses to invent an alternate persistent
+  location if `VAULT_ROOT` is invalid.
+- If a secret ever appears in output, logs, generated files, or Git history,
+  stop and rotate the credential in the Oura developer portal.
 
-## Scope boundaries (do not extend without separate approval)
+## Code locations
 
-- No 30-90 day backfill
-- No detailed `/v2/usercollection/sleep` parsing or HRV/RHR normalization
-- No webhook subscriptions
-- No scheduling, cron, or GitHub Actions
-- No PHI application server/code
-- No reports, insights, or supplement correlation
-- No medical interpretation of any retrieved value
+```text
+connector-validation/
+├── run_validation.py                  # Phase A 7-day validation runner
+├── run_phase_b.py                     # Phase B bounded 30-day runner
+├── .env.example                       # non-secret local config template
+└── src/oura_connector/
+    ├── config.py                       # local environment/config validation
+    ├── oauth_flow.py                   # localhost OAuth authorization flow
+    ├── oura_api.py                     # bounded API + pagination helpers
+    ├── raw_landing.py                  # canonical raw/provenance landing
+    └── secure_utils.py                 # secret redaction guard
+```
 
 ## Reference
 
 - Oura API V2 base: `https://api.ouraring.com/v2`
 - OAuth authorize: `https://cloud.ouraring.com/oauth/authorize`
 - OAuth token: `https://api.ouraring.com/oauth/token`
-- Personal Access Tokens are deprecated; OAuth2 authorization-code flow is
-  required even for single-user personal use.
