@@ -1,0 +1,27 @@
+.env
+.env.*
+!.env.example
+credentials.json
+tokens.json
+token.json
+secrets.json
+*.secret
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+tmp/
+
+# Extra standard Python hygiene (non-sensitive, additive)
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# Never allow raw health data or vault exports into this repo
+Source Data/
+*.daily_sleep.json
+*.metadata.json
+vault_staging/
