@@ -30,3 +30,9 @@ health-connect-exports/
 *.health-connect.json
 phi-hume-health-connect-*.json
 hume_body_composition_core_*.json
+
+# Function Health source/extraction PHI remains outside GitHub
+Function Health Data*.pdf
+function_health_extracted_labs*.json
+Function Health Extraction Verification*.md
+function-health-exports/
