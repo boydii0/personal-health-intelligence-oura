@@ -1,6 +1,6 @@
 # PHI Step 5A — Hume / Android Health Connect Validation
 
-Status: **DRAFT / LOCAL DEVICE VALIDATION REQUIRED**
+Status: **LOCAL DEVICE VALIDATION PASS / MERGE REVIEW READY**
 
 This folder contains a deliberately bounded Android validation utility for PHI Step 5A. It is **not** the deferred Personal Health App and is not a production sync service.
 
@@ -30,15 +30,20 @@ It does **not** request Health Connect write permissions, background health-data
 7. Compare 3–5 candidate Hume records with the Hume app.
 8. Only after PASS should Step 5B normalization proceed.
 
+## Validation status
+
+The owner completed the bounded local-device flow on 2026-08-18 and confirmed the required manual fidelity comparison PASS. Raw exported health data remains outside GitHub. Step 5B deterministic normalization is therefore authorized by PHI governance.
+
 ## Build assumptions
 
 - JDK 17
 - Android Gradle Plugin 9.2.0 / Gradle 9.4.1+
+- AGP 9 built-in Kotlin; do not apply the legacy `org.jetbrains.kotlin.android` plugin
 - compile/target SDK 36
 - Health Connect Jetpack 1.1.0 stable
 - AndroidX Activity 1.13.0
 
-No Gradle wrapper is committed in this draft; use Android Studio / local Gradle for initial build validation.
+No Gradle wrapper is committed in this validator folder; use Android Studio / local Gradle for build validation.
 
 ## Sources
 
