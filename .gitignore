@@ -25,3 +25,7 @@ Source Data/
 *.daily_sleep.json
 *.metadata.json
 vault_staging/
+health-connect-exports/
+*.healthconnect.json
+*.health-connect.json
+phi-hume-health-connect-*.json
