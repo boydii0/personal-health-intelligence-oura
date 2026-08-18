@@ -20,7 +20,7 @@ build/
 .mypy_cache/
 .pytest_cache/
 
-# Never allow raw health data or vault exports into this repo
+# Never allow raw or normalized health data or vault exports into this repo
 Source Data/
 *.daily_sleep.json
 *.metadata.json
@@ -29,3 +29,4 @@ health-connect-exports/
 *.healthconnect.json
 *.health-connect.json
 phi-hume-health-connect-*.json
+hume_body_composition_core*.json
