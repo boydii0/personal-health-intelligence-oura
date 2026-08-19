@@ -36,3 +36,12 @@ Function Health Data*.pdf
 function_health_extracted_labs*.json
 Function Health Extraction Verification*.md
 function-health-exports/
+
+# Cross-source Step 8 canonical PHI inputs/outputs remain outside GitHub
+oura_baseline_core_*.json
+function_health_biomarker_core_*.json
+current_medications_*.json
+Supplement Regimen*.md
+Supplement Timeline*.md
+Cross-Source Weekly Insight*.md
+cross_source_weekly_insight*.json
