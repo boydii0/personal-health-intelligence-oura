@@ -45,3 +45,9 @@ Supplement Regimen*.md
 Supplement Timeline*.md
 Cross-Source Weekly Insight*.md
 cross_source_weekly_insight*.json
+
+# Phase C runtime state/secrets must remain local to the always-on PC
+tokens.dat
+runtime.lock
+last_status.json
+OuraRuntime/
