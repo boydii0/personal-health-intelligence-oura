@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Mapping
 
 CANONICAL_RELATIVE_PATH = Path("03_Areas") / "Health" / "Personal Health Repository" / "Source Data" / "Oura"
-WORKER_VERSION = "oura-phase-c-runtime-0.1"
+WORKER_VERSION = "oura-phase-c-runtime-0.1.1"
 
 
 class RuntimeLandingError(RuntimeError):
@@ -48,7 +48,7 @@ def make_run_id(now: datetime | None = None) -> str:
 def local_operational_day(now: datetime | None = None) -> str:
     """Return the machine-local calendar day used only for outer-folder partitioning.
 
-    UTC remains authoritative for run identity and retrieval provenance.  The
+    UTC remains authoritative for run identity and retrieval provenance. The
     outer YYYY-MM-DD folder answers which local operating day the scheduled
     collection belongs to, so an evening Central-time run after 00:00 UTC
     remains grouped with the same local day's morning run.
