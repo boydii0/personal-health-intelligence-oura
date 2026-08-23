@@ -4,7 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +15,15 @@ from oura_connector.runtime_landing import RuntimeDataset, land_runtime_run, loc
 
 class PhaseCLocalPartitionTests(unittest.TestCase):
     def test_evening_central_run_stays_on_local_operating_day(self):
-        local_evening = datetime(2026, 8, 22, 19, 0, 2, tzinfo=timedelta(hours=-5))
+        local_evening = datetime(
+            2026,
+            8,
+            22,
+            19,
+            0,
+            2,
+            tzinfo=timezone(timedelta(hours=-5)),
+        )
         self.assertEqual(local_operational_day(local_evening), "2026-08-22")
 
         with tempfile.TemporaryDirectory() as td:
@@ -41,7 +49,10 @@ class PhaseCLocalPartitionTests(unittest.TestCase):
             self.assertEqual(run_path.parent.name, "2026-08-22")
             self.assertEqual(run_path.name, "20260823T000002624124Z")
             manifest = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
-            self.assertEqual(manifest["retrieved_at_utc"], "2026-08-23T00:00:02.624124+00:00")
+            self.assertEqual(
+                manifest["retrieved_at_utc"],
+                "2026-08-23T00:00:02.624124+00:00",
+            )
             self.assertEqual(manifest["operational_day_local"], "2026-08-22")
 
 
