@@ -45,6 +45,20 @@ def make_run_id(now: datetime | None = None) -> str:
     return value.strftime("%Y%m%dT%H%M%S%fZ")
 
 
+def local_operational_day(now: datetime | None = None) -> str:
+    """Return the machine-local calendar day used only for outer-folder partitioning.
+
+    UTC remains authoritative for run identity and retrieval provenance.  The
+    outer YYYY-MM-DD folder answers which local operating day the scheduled
+    collection belongs to, so an evening Central-time run after 00:00 UTC
+    remains grouped with the same local day's morning run.
+    """
+    value = now or datetime.now().astimezone()
+    if value.tzinfo is None:
+        raise RuntimeLandingError("Operational-day timestamp must be timezone-aware.")
+    return value.date().isoformat()
+
+
 def _write_bytes_fsync(path: Path, payload: bytes) -> None:
     with path.open("wb") as handle:
         handle.write(payload)
@@ -57,14 +71,14 @@ def _write_json_fsync(path: Path, payload: dict) -> None:
     _write_bytes_fsync(path, raw)
 
 
-def land_runtime_run(*, vault_root: str, start_date: str, end_date: str, scope_granted: str, datasets: Mapping[str, RuntimeDataset], retrieved_at_utc: str | None = None, run_id: str | None = None) -> RuntimeLandingResult:
+def land_runtime_run(*, vault_root: str, start_date: str, end_date: str, scope_granted: str, datasets: Mapping[str, RuntimeDataset], retrieved_at_utc: str | None = None, run_id: str | None = None, operational_now: datetime | None = None) -> RuntimeLandingResult:
     """Publish one complete, append-oriented Phase C retrieval run."""
     if not datasets:
         raise RuntimeLandingError("At least one dataset is required for a runtime landing.")
     vault_path = _validate_vault_root(vault_root)
     retrieved_at = retrieved_at_utc or datetime.now(timezone.utc).isoformat()
     rid = run_id or make_run_id()
-    day = retrieved_at[:10]
+    day = local_operational_day(operational_now)
     day_dir = vault_path / CANONICAL_RELATIVE_PATH / day
     day_dir.mkdir(parents=True, exist_ok=True)
     staging = day_dir / f".staging-{rid}"
@@ -115,6 +129,7 @@ def land_runtime_run(*, vault_root: str, start_date: str, end_date: str, scope_g
             "run_id": rid,
             "status": "PASS",
             "retrieved_at_utc": retrieved_at,
+            "operational_day_local": day,
             "requested_start_date": start_date,
             "requested_end_date": end_date,
             "scope_granted": scope_granted,
